@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Crypto Liquidation Bot</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/socket.io-client@4.7.2/dist/socket.io.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        dark: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-text {
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .tradingview-widget-container {
+            height: 100%;
+        }
+        .position-card {
+            transition: all 0.3s ease;
+        }
+        .position-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        #sidebar {
+            transition: all 0.3s ease;
+        }
+        .sidebar-minimized {
+            width: 80px !important;
+        }
+        .sidebar-minimized .nav-text {
+            display: none;
+        }
+        .sidebar-minimized .logo-text {
+            display: none;
+        }
+        .sidebar-minimized .user-info {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex">
+    <!-- Sidebar -->
+    <div id="sidebar" class="bg-gray-800 w-64 min-h-screen flex flex-col fixed z-20">
+        <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="bg-primary-500 p-2 rounded-lg mr-3">
+                    <i data-feather="zap" class="text-white"></i>
+                </div>
+                <span class="logo-text text-xl font-bold gradient-text">CryptoLiquidationBot</span>
+            </div>
+            <button id="toggleSidebar" class="text-gray-400 hover:text-white">
+                <i data-feather="chevron-left"></i>
+            </button>
+        </div>
+        
+        <div class="p-4 border-b border-gray-700 user-info">
+            <div class="flex items-center">
+                <div class="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center">
+                    <i data-feather="user" class="text-primary-400"></i>
+                </div>
+                <div class="ml-3">
+                    <div class="text-sm font-medium text-white">John Trader</div>
+                    <div class="text-xs text-gray-400">Pro Plan</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto">
+            <nav class="p-2">
+                <div class="space-y-1">
+                    <a href="#" class="bg-gray-700 text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                        <i data-feather="home" class="text-gray-300 mr-3 flex-shrink-0"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                    <a href="#" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                        <i data-feather="activity" class="text-gray-400 mr-3 flex-shrink-0"></i>
+                        <span class="nav-text">Bot Configuration</span>
+                    </a>
+                    <a href="#" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                        <i data-feather="dollar-sign" class="text-gray-400 mr-3 flex-shrink-0"></i>
+                        <span class="nav-text">Trade History</span>
+                    </a>
+                    <a href="#" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                        <i data-feather="alert-circle" class="text-gray-400 mr-3 flex-shrink-0"></i>
+                        <span class="nav-text">Alerts Log</span>
+                    </a>
+                    <a href="#" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                        <i data-feather="settings" class="text-gray-400 mr-3 flex-shrink-0"></i>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider nav-text">Account</h3>
+                    <div class="mt-1 space-y-1">
+                        <a href="#" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                            <i data-feather="user" class="text-gray-400 mr-3 flex-shrink-0"></i>
+                            <span class="nav-text">Profile</span>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                            <i data-feather="credit-card" class="text-gray-400 mr-3 flex-shrink-0"></i>
+                            <span class="nav-text">Billing</span>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-3 py-2 text-sm font-medium rounded-md">
+                            <i data-feather="log-out" class="text-gray-400 mr-3 flex-shrink-0"></i>
+                            <span class="nav-text">Sign out</span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <div class="p-4 border-t border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                    <span class="text-xs text-gray-400">Bot Status: <span class="text-green-400">Active</span></span>
+                </div>
+                <button class="text-gray-400 hover:text-white">
+                    <i data-feather="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 ml-64" id="main-content">
+        <!-- Top Navigation -->
+        <header class="bg-gray-800 border-b border-gray-700">
+            <div class="flex items-center justify-between px-6 py-3">
+                <div class="flex items-center">
+                    <button id="mobile-menu-button" class="md:hidden text-gray-400 hover:text-white mr-2">
+                        <i data-feather="menu"></i>
+                    </button>
+                    <h1 class="text-xl font-bold text-white">Dashboard Overview</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-400 hover:text-white relative">
+                        <i data-feather="bell"></i>
+                        <span class="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                    </button>
+                    <button class="text-gray-400 hover:text-white">
+                        <i data-feather="help-circle"></i>
+                    </button>
+                    <div class="relative">
+                        <button id="user-menu-button" class="flex items-center space-x-2 focus:outline-none">
+                            <div class="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center">
+                                <i data-feather="user" class="text-primary-400"></i>
+                            </div>
+                            <span class="hidden md:inline text-sm font-medium">John Trader</span>
+                            <i data-feather="chevron-down" class="text-gray-400 w-4 h-4"></i>
+                        </button>
+                        <!-- Dropdown menu -->
+                        <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10 border border-gray-700">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Your Profile</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Settings</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Sign out</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="text-gray-400 text-sm">Today's P&L</div>
+                    <div class="text-2xl font-bold text-green-400 mt-1">+$1,245.32</div>
+                    <div class="text-xs text-gray-400 mt-1">5 trades (80% win rate)</div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="text-gray-400 text-sm">Active Positions</div>
+                    <div class="text-2xl font-bold text-white mt-1">2</div>
+                    <div class="text-xs text-gray-400 mt-1">Max: 3</div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="text-gray-400 text-sm">Alerts Today</div>
+                    <div class="text-2xl font-bold text-white mt-1">8</div>
+                    <div class="text-xs text-gray-400 mt-1">5 executed</div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="text-gray-400 text-sm">Account Balance</div>
+                    <div class="text-2xl font-bold text-white mt-1">$24,812.76</div>
+                    <div class="text-xs text-gray-400 mt-1">+12.4% this month</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Chart -->
+                <div class="lg:col-span-2 bg-gray-800 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-medium text-white">BTC/USDT - 30s Chart</h2>
+                        <div class="flex space-x-2">
+                            <select class="bg-gray-700 border border-gray-600 text-white text-sm rounded px-2 py-1">
+                                <option>BTC</option>
+                                <option>SOL</option>
+                                <option>SUI</option>
+                                <option>ZEUS</option>
+                            </select>
+                            <button class="bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-sm">
+                                <i data-feather="refresh-cw" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="h-96">
+                        <!-- TradingView Widget -->
+                        <div class="tradingview-widget-container">
+                            <div class="tradingview-widget-container__widget"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                            {
+                                "autosize": true,
+                                "symbol": "BINANCE:BTCUSDT",
+                                "interval": "30",
+                                "timezone": "Etc/UTC",
+                                "theme": "dark",
+                                "style": "1",
+                                "locale": "en",
+                                "enable_publishing": false,
+                                "allow_symbol_change": true,
+                                "support_host": "https://www.tradingview.com"
+                            }
+                            </script>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Alerts -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-medium text-white">Recent Alerts</h2>
+                        <button class="text-primary-400 text-sm font-medium">View All</button>
+                    </div>
+                    
+                    <div
+</body>
+</html>

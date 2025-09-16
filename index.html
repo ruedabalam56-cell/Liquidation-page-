@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Liquidation Bot | Automated Trading Platform</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/socket.io-client@4.7.2/dist/socket.io.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        dark: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-text {
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .tradingview-widget-container {
+            height: 500px;
+        }
+        .position-card {
+            transition: all 0.3s ease;
+        }
+        .position-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-gray-800 border-b border-gray-700 fixed w-full z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <span class="text-xl font-bold gradient-text">CryptoLiquidationBot</span>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="#" class="bg-gray-900 text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                            <a href="#features" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Features</a>
+                            <a href="#how-it-works" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">How It Works</a>
+                            <a href="#pricing" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Pricing</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-4 flex items-center md:ml-6">
+                        <button class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium mr-4">
+                            Sign In
+                        </button>
+                        <button class="bg-gradient-to-r from-primary-500 to-purple-600 hover:opacity-90 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Start Free Trial
+                        </button>
+                    </div>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button type="button" class="bg-gray-800 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <i data-feather="menu"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu -->
+        <div class="md:hidden hidden" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#" class="bg-gray-900 text-white block px-3 py-2 rounded-md text-base font-medium">Dashboard</a>
+                <a href="#features" class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Features</a>
+                <a href="#how-it-works" class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">How It Works</a>
+                <a href="#pricing" class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Pricing</a>
+            </div>
+            <div class="pt-4 pb-3 border-t border-gray-700">
+                <div class="flex items-center px-5">
+                    <button class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium w-full mb-2">
+                        Sign In
+                    </button>
+                </div>
+                <div class="flex items-center px-5">
+                    <button class="bg-gradient-to-r from-primary-500 to-purple-600 hover:opacity-90 text-white px-4 py-2 rounded-md text-sm font-medium w-full">
+                        Start Free Trial
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="relative pt-24 pb-32 bg-gradient-to-b from-gray-800 to-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+                <div class="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left">
+                    <h1 class="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl">
+                        <span class="block">Automate Your</span>
+                        <span class="block gradient-text">Liquidation Trading</span>
+                    </h1>
+                    <p class="mt-3 text-base text-gray-300 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                        Receive TradingView alerts on 30s charts, execute trades automatically on your exchange with precise stop losses and take profits for BTC, SOL, SUI, and ZEUS.
+                    </p>
+                    <div class="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0">
+                        <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+                            <div class="rounded-md shadow">
+                                <a href="#" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 md:py-4 md:text-lg md:px-10">
+                                    Get Started
+                                </a>
+                            </div>
+                            <div class="mt-3 sm:mt-0 sm:ml-3">
+                                <a href="#" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-primary-200 bg-gray-700 hover:bg-gray-600 md:py-4 md:text-lg md:px-10">
+                                    Live Demo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-12 relative sm:max-w-lg sm:mx-auto lg:mt-0 lg:max-w-none lg:mx-0 lg:col-span-6 lg:flex lg:items-center">
+                    <div class="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-md">
+                        <div class="bg-gray-800 p-4 rounded-t-lg">
+                            <div class="flex items-center">
+                                <div class="flex space-x-2">
+                                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                </div>
+                                <div class="ml-4 text-sm font-medium text-gray-300">BTC/USDT - 30s Chart</div>
+                            </div>
+                        </div>
+                        <!-- TradingView Widget -->
+                        <div class="tradingview-widget-container">
+                            <div class="tradingview-widget-container__widget"></div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                            {
+                                "autosize": true,
+                                "symbol": "BINANCE:BTCUSDT",
+                                "interval": "30",
+                                "timezone": "Etc/UTC",
+                                "theme": "dark",
+                                "style": "1",
+                                "locale": "en",
+                                "enable_publishing": false,
+                                "allow_symbol_change": true,
+                                "support_host": "https://www.tradingview.com"
+                            }
+                            </script>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-b-lg">
+                            <div class="flex justify-between items-center">
+                                <div class="text-sm text-gray-400">Liquidation Zones Detected</div>
+                                <div class="flex space-x-2">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded bg-red-900 text-red-200">SHORT</span>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded bg-green-900 text-green-200">LONG</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div id="features" class="py-16 bg-gray-900 overflow-hidden lg:py-24">
+        <div class="relative max-w-xl mx-auto px-4 sm:px-6 lg:px-8 lg:max-w-7xl">
+            <div class="relative">
+                <h2 class="text-center text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+                    Powerful Features for Automated Trading
+                </h2>
+                <p class="mt-4 max-w-3xl mx-auto text-center text-xl text-gray-300">
+                    Everything you need to automate your liquidation trading strategy
+                </p>
+            </div>
+
+            <div class="relative mt-12 lg:mt-20 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+                <div class="relative">
+                    <h3 class="text-2xl font-extrabold text-white tracking-tight sm:text-3xl">
+                        Real-Time TradingView Alerts
+                    </h3>
+                    <p class="mt-3 text-lg text-gray-300">
+                        Connect directly to your TradingView alerts or Telegram group. Our bot parses all signals and executes trades automatically on your exchange.
+                    </p>
+
+                    <dl class="mt-10 space-y-10">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                                    <i data-feather="alert-circle"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <dt class="text-lg leading-6 font-medium text-white">
+                                    Alert Parsing
+                                </dt>
+                                <dd class="mt-2 text-base text-gray-300">
+                                    Supports custom alert formats from TradingView with regex pattern matching.
+                                </dd>
+                            </div>
+                        </div>
+
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                                    <i data-feather="zap"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <dt class="text-lg leading-6 font-medium text-white">
+                                    Lightning Fast Execution
+                                </dt>
+                                <dd class="mt-2 text-base text-gray-300">
+                                    Trades executed within 500ms of receiving an alert to capture optimal entries.
+                                </dd>
+                            </div>
+                        </div>
+
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                                    <i data-feather="filter"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <dt class="text-lg leading-6 font-medium text-white">
+                                    Advanced Filtering
+                                </dt>
+                                <dd class="mt-2 text-base text-gray-300">
+                                    Filter signals by time, volatility, or other conditions to avoid false signals.
+                                </dd>
+                            </div>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="mt-10 -mx-4 relative lg:mt-0" aria-hidden="true">
+                    <div class="relative overflow-hidden rounded-xl shadow-xl">
+                        <div class="bg-gray-800 p-6">
+                            <div class="text-white font-medium mb-4">Telegram Alert Integration</div>
+                            <div class="bg-gray-700 p-4 rounded-lg mb-4">
+                                <div class="flex items-start mb-3">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center">
+                                        <i data-feather="bell" class="text-primary-400"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-white">TradingView Alert</div>
+                                        <div class="text-sm text-gray-300 mt-1">LONG BTC at 62350.25 SL 61800 TP 63600 #BTCUSDT 30s</div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-gray-600 pt-3">
+                                    <div class="text-xs text-gray-400">Bot response: Position opened - BTC LONG @ 62350.25 (1.5x)</div>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Telegram Bot Token</label>
+                                    <input type="password" class="bg-gray-900 border border-gray-700 rounded-md px-3 py-2 w-full text-white" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Chat ID</label>
+                                    <input type="text" class="bg-gray-900 border border-gray-700 rounded-md px-3 py-2 w-full text-white" placeholder="-1001234567890">
+                                </div>
+                                <button class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium w-full">
+                                    Connect Telegram
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative mt-12 sm:mt-16 lg:mt-24">
+                <div class="lg:grid lg:grid-flow-row-dense lg:grid-cols-2 lg:gap-8 lg:items-center">
+                    <div class="lg:col-start-2">
+                        <h3 class="text-2xl font-extrabold text-white tracking-tight sm:text-3xl">
+                            Advanced Risk Management
+                        </h3>
+                        <p class="mt-3 text-lg text-gray-300">
+                            Full control over your risk parameters with intelligent position sizing and stop management.
+                        </p>
+
+                        <dl class="mt-10 space-y-10">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                                        <i data-feather="shield"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <dt class="text-lg leading-6 font-medium text-white">
+                                        Auto Stop-Loss
+                                    </dt>
+                                    <dd class="mt-2 text-base text-gray-300">
+                                        Dynamic stop-loss placement based on liquidation levels or fixed percentages.
+                                    </dd>
+                                </div>
+                            </div>
+
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                                        <i data-feather="trending-up"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <dt class="text-lg leading-6 font-medium text-white">
+                                        Take-Profit Strategies
+                                    </dt>
+                                    <dd class="mt-2 text-base text-gray-300">
+                                        Multiple take-profit levels, trailing stops, and scaling out of positions.
+                                    </dd>
+                                </div>
+                            </div>
+
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-md bg-primary-500 text-white">
+                                        <i data-feather="bar-chart-2"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <dt class="text-lg leading-6 font-medium text-white">
+                                        Position Sizing
+                                    </dt>
+                                    <dd class="mt-2 text-base text-gray-300">
+                                        Fixed dollar amount, percentage of balance, or volatility-adjusted sizing.
+                                    </dd>
+                                </div>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div class="mt-10 -mx-4 relative lg:mt-0 lg:col-start-1">
+                        <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+                            <div class="text-white font-medium mb-4">Risk Management Settings</div>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Risk Per Trade (%)</label>
+                                    <input type="range" min="0.1" max="5" step="0.1" value="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                                    <div class="flex justify-between text-xs text-gray-400">
+                                        <span>0.1%</span>
+                                        <span>5%</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Stop-Loss (%)</label>
+                                    <input type="range" min="0.1" max="10" step="0.1" value="1.5" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                                    <div class="flex justify-between text-xs text-gray-400">
+                                        <span>0.1%</span>
+                                        <span>10%</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Take-Profit (Multiple of Risk)</label>
+                                    <div class="flex space-x-4">
+                                        <div class="flex-1">
+                                            <label class="block text-xs text-gray-400 mb-1">TP 1</label>
+                                            <input type="number" min="1" max="10" step="0.5" value="1.5" class="bg-gray-900 border border-gray-700 rounded-md px-3 py-2 w-full text-white">
+                                        </div>
+                                        <div class="flex-1">
+                                            <label class="block text-xs text-gray-400 mb-1">TP 2</label>
+                                            <input type="number" min="1" max="10" step="0.5" value="3" class="bg-gray-900 border border-gray-700 rounded-md px-3 py-2 w-full text-white">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Max Open Positions</label>
+                                    <select class="bg-gray-900 border border-gray-700 rounded-md px-3 py-2 w-full text-white">
+                                        <option>1</option>
+                                        <option selected>3</option>
+                                        <option>5</option>
+                                        <option>10</option>
+                                        <option>Unlimited</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <div id="how-it-works" class="py-16 bg-gray-800 overflow-hidden lg:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center">
+                <h2 class="text-base text-primary-400 font-semibold tracking-wide uppercase">Process</h2>
+                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+                    How Crypto Liquidation Bot Works
+                </p>
+                <p class="mt-4 max-w-2xl text-xl text-gray-300 lg:mx-auto">
+                    Simple setup to automate your trading in minutes
+                </p>
+            </div>
+
+            <div class="mt-20">
+                <div class="space-y-20">
+                    <div class="flex flex-col md:flex-row items-center">
+                        <div class="flex-shrink-0 relative mb-8 md:mb-0 md:mr-12">
+                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-primary-500 text-white text-xl font-bold border-4 border-gray-800">
+                                1
+                            </div>
+                            <div class="absolute h-full w-0.5 bg-gray-600 top-0 left-8 -z-10 md:h-0.5 md:w-24 md:left-16 md:top-8"></div>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Connect Your TradingView Alerts</h3>
+                            <p class="mt-2 text-lg text-gray-300">
+                                Link your TradingView alerts via Telegram webhook or directly through our API. The bot will monitor and parse all incoming signals for the configured assets (BTC, SOL, SUI, ZEUS) on 30s charts.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center">
+                        <div class="flex-shrink-0 relative mb-8 md:mb-0 md:mr-12">
+                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-primary-500 text-white text-xl font-bold border-4 border-gray-800">
+                                2
+                            </div>
+                            <div class="absolute h-full w-0.5 bg-gray-600 top-0 left-8 -z-10 md:h-0.5 md:w-24 md:left-16 md:top-8"></div>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Configure Your Exchange</h3>
+                            <p class="mt-2 text-lg text-gray-300">
+                                Securely connect your exchange API keys (Binance, Bybit, OKX, etc.) with encrypted storage. Test the connection to ensure everything works properly.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center">
+                        <div class="flex-shrink-0 relative mb-8 md:mb-0 md:mr-12">
+                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-primary-500 text-white text-xl font-bold border-4 border-gray-800">
+                                3
+                            </div>
+                            <div class="absolute h-full w-0.5 bg-gray-600 top-0 left-8 -z-10 md:h-0.5 md:w-24 md:left-16 md:top-8"></div>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Set Your Risk Parameters</h3>
+                            <p class="mt-2 text-lg text-gray-300">
+                                Define your position sizing, stop-loss, and take-profit rules. Choose between percentage of balance or fixed amount risk per trade.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center">
+                        <div class="flex-shrink-0 relative mb-8 md:mb-0 md:mr-12">
+                            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-primary-500 text-white text-xl font-bold border-4 border-gray-800">
+                                4
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Activate the Bot</h3>
+                            <p class="mt-2 text-lg text-gray-300">
+                                Start the bot and let it handle all trade execution automatically. Monitor performance through the dashboard and receive real-time notifications.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Preview -->
+    <div class="py-16 bg-gray-900 overflow-hidden lg:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+                    Powerful Dashboard Overview
+                </h2>
+                <p class="mt-4 max-w-2xl text-xl text-gray-300 mx-auto">
+                    Monitor all your positions, alerts, and performance in one place
+                </p>
+            </div>
+
+            <div class="mt-12 bg-gray-800 rounded-xl shadow-xl overflow-hidden">
+                <div class="bg-gray-700 px-6 py-3 border-b border-gray-600 flex justify-between items-center">
+                    <div class="text-white font-medium">Live Dashboard</div>
+                    <div class="flex space-x-2">
+                        <div class="flex items-center">
+                            <div class="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+                            <span class="text-xs text-gray-300">Bot Active</span>
+                        </div>
+                        <div class="text-xs text-gray-400">Last updated: Just now</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+                    <!-- Stats Cards -->
+                    <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="text-gray-400 text-sm">Today's P&L</div>
+                            <div class="text-2xl font-bold text-green-400 mt-1">+$1,245.32</div>
+                            <div class="text-xs text-gray-400 mt-1">5 trades (80% win rate)</div>
+                        </div>
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="text-gray-400 text-sm">Active Positions</div>
+                            <div class="text-2xl font-bold text-white mt-1">2</div>
+                            <div class="text-xs text-gray-400 mt-1">Max: 3</div>
+                        </div>
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="text-gray-400 text-sm">Alerts Today</div>
+                            <div class="text-2xl font-bold text-white mt-1">8</div>
+                            <div class="text-xs text-gray-400 mt-1">5 executed</div>
+                        </div>
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="text-gray-400 text-sm">Account Balance</div>
+                            <div class="text-2xl font-bold text-white mt-1">$24,812.76</div>
+                            <div class="text-xs text-gray-400 mt-1">+12.4% this month</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Positions -->
+                    <div class="lg:col-span-2 bg-gray-700 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-white">Active Positions</h3>
+                            <button class="text-primary-400 text-sm font-medium">View All</button>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <!-- Position Card 1 -->
+                            <div class="position-card bg-gray-800 rounded-lg p-4">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="flex items-center">
+                                            <div class="bg-gray-600 p-2 rounded-lg mr-3">
+                                                <i data-feather="trending-up" class="text-green-400"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-medium text-white">BTC/USDT</div>
+                                                <div class="text-xs text-gray-400 mt-1">LONG • 5x • 30m ago</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-lg font-bold text-green-400">+3.2%</div>
+                                        <div class="text-xs text-gray-400">+$792.50</div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <div class="text-xs text-gray-400">Entry</div>
+                                        <div class="text-sm font-medium text-white">$62,350.25</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-400">Current</div>
+                                        <div class="text-sm font-medium text-white">$64,350.80</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-400">Liquidation</div>
+                                        <div class="text-sm font-medium text-white">$59,800.00</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-700 flex justify-end space-x-2">
+                                    <button class="text-xs bg-red-900 hover:bg-red-800 text-red-200 px-3 py-1 rounded">
+                                        Close Position
+                                    </button>
+                                    <button class="text-xs bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded">
+                                        Adjust SL/TP
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Position Card 2 -->
+                            <div class="position-card bg-gray-800 rounded-lg p-4">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="flex items-center">
+                                            <div class="bg-gray-600 p-2 rounded-lg mr-3">
+                                                <i data-feather="trending-down" class="text-red-400"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-medium text-white">SOL/USDT</div>
+                                                <div class="text-xs text-gray-400 mt-1">SHORT • 3x • 1h ago</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-lg font-bold text-red-400">-1.8%</div>
+                                        <div class="text-xs text-gray-400">-$214.30</div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <div class="text-xs text-gray-400">Entry</div>
+                                        <div class="text-sm font-medium text-white">$142.50</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-400">Current</div>
+                                        <div class="text-sm font-medium text-white">$145.06</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-400">Liquidation</div>
+                                        <div class="text-sm font-medium text-white">$152.00</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-700 flex justify-end space-x-2">
+                                    <button class="text-xs bg-red-900 hover:bg-red-800 text-red-200 px-3 py-1 rounded">
+                                        Close Position
+                                    </button>
+                                    <button class="text-xs bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded">
+                                        Adjust SL/TP
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Alerts -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-white">Recent Alerts</h3>
+                            <button class="text-primary-400 text-sm font-medium">View All</button>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="bg-gray-800 p-3 rounded-lg">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="text-sm font-medium text-white">LONG BTC @ 62350.25</div>
+                                        <div class="text-xs text-gray-400 mt-1">2 minutes ago</div>
+                                    </div>
+                                    <div class="bg-green-900 text-green-200 text-xs px-2 py-1 rounded">Executed</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-800 p-3 rounded-lg">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="text-sm font-medium text-white">SHORT SOL @ 142.50</div>
+                                        <div class="text-xs text-gray-400 mt-1">1 hour ago</div>
+                                    </div>
+                                    <div class="bg-green-900 text-green-200 text-xs px-2 py-1 rounded">Executed</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-800 p-3 rounded-lg">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="text-sm font-medium text-white">LONG SUI @ 1.2450</div>
+                                        <div class="text-xs text-gray-400 mt-1">2 hours ago</div>
+                                    </div>
+                                    <div class="bg-yellow-900 text-yellow-200 text-xs px-2 py-1 rounded">Ignored</div>
+                                </div>
+                                <div class="text-xs text-gray-400 mt-1">Max positions reached (3/3)</div>
+                            </div>
+                            
+                            <div class="bg-gray-800 p-3 rounded-lg">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="text-sm font-medium text-white">CLOSE BTC @ 64120.75</div>
+                                        <div class="text-xs text-gray-400 mt-1">15 minutes ago</div>
+                                    </div>
+                                    <div class="bg-green-900 text-green-200 text-xs px-2 py-1 rounded">Executed</div>
+                                </div>
+                                <div class="text-xs text-gray-400 mt-1">TP 2 hit (+3.2%)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Performance Chart -->
+                    <div class="lg:col-span-3 bg-gray-700 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-white">Performance Overview</h3>
+                            <select class="bg-gray-800 border border-gray-600 text-white text-sm rounded px-3 py-1">
+                                <option>Last 7 Days</option>
+                                <option selected>Last 30 Days</option>
+                                <option>Last 90 Days</option>
+                                <option>All Time</option>
+                            </select>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Section -->
+    <div id="pricing" class="py-16 bg-gray-800 overflow-hidden lg:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+                    Simple, Transparent Pricing
+                </h2>
+                <p class="mt-4 max-w-2xl text-xl text-gray-300 mx-auto">
+                    Start with a free trial, no credit card required
+                </p>
+            </div>
+
+            <div class="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
+                <!-- Free Tier -->
+                <div class="bg-gray-700 rounded-xl shadow-xl overflow-hidden">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white">Starter</h3>
+                        <p class="mt-2 text-gray-300">For testing and small accounts</p>
+                        <div class="mt-6">
+                            <span class="text-4xl font-bold text-white">$0</span>
+                            <span class="text-gray-400">/month</span>
+                        </div>
+                        <div class="mt-6">
+                            <button class="w-full bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                Start Free Trial
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-600 px-6 py-4 bg-gray-800">
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">1 Exchange Connection</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Basic Alert Parsing</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">2 Assets (BTC, SOL)</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="x" class="text-gray-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span class="text-gray-400">Advanced Risk Controls</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="x" class="text-gray-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span class="text-gray-400">Telegram Notifications</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Pro Tier -->
+                <div class="bg-gray-700 rounded-xl shadow-xl overflow-hidden border-2 border-primary-500 transform scale-105 z-10">
+                    <div class="bg-primary-500 p-2 text-center text-white text-sm font-medium">
+                        Most Popular
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white">Professional</h3>
+                        <p class="mt-2 text-gray-300">For serious traders</p>
+                        <div class="mt-6">
+                            <span class="text-4xl font-bold text-white">$49</span>
+                            <span class="text-gray-400">/month</span>
+                        </div>
+                        <div class="mt-6">
+                            <button class="w-full bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                Get Started
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-600 px-6 py-4 bg-gray-800">
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">3 Exchange Connections</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Advanced Alert Parsing</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">All Assets (BTC, SOL, SUI, ZEUS)</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Advanced Risk Controls</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Telegram Notifications</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Priority Support</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Enterprise Tier -->
+                <div class="bg-gray-700 rounded-xl shadow-xl overflow-hidden">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white">Enterprise</h3>
+                        <p class="mt-2 text-gray-300">For institutions & teams</p>
+                        <div class="mt-6">
+                            <span class="text-4xl font-bold text-white">$199</span>
+                            <span class="text-gray-400">/month</span>
+                        </div>
+                        <div class="mt-6">
+                            <button class="w-full bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                Contact Sales
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-600 px-6 py-4 bg-gray-800">
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Unlimited Exchange Connections</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Custom Alert Parsing</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">All Assets + Custom Pairs</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Advanced Risk Controls</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Telegram & Email Notifications</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Dedicated Account Manager</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i data-feather="check" class="text-green-400 mr-2 mt=0.5 flex-shrink-0"></i>
+                                <span class="text-gray-300">Custom Development</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="bg-gray-900">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
+            <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                <span class="block">Ready to automate your trading?</span>
+                <span class="block gradient-text">Start your free trial today.</span>
+            </h2>
+            <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+                <div class="inline-flex rounded-md shadow">
+                    <a href="#" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                        Get started
+                    </a>
+                </div>
+                <div class="ml-3 inline-flex rounded-md shadow">
+                    <a href="#" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary-600 bg-white hover:bg-gray-50">
+                        Learn more
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-400 tracking-wider uppercase">Product</h3>
+                    <ul class="mt-4 space-y-2">
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Features</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Pricing</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Documentation</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Releases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-400 tracking-wider uppercase">Company</h3>
+                    <ul class="mt-4 space-y-2">
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">About</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Blog</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Careers</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-400 tracking-wider uppercase">Legal</h3>
+                    <ul class="mt-4 space-y-2">
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Privacy</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Terms</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Risk Disclosure</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-400 tracking-wider uppercase">Connect</h3>
+                    <ul class="mt-4 space-y-2">
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Twitter</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Telegram</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">Discord</a></li>
+                        <li><a href="#" class="text-base text-gray-300 hover:text-white">YouTube</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 border-t border-gray-700 pt-8 md:flex md:items-center md:justify-between">
+                <div class="flex space-x-6 md:order-2">
+                    <a href="#" class="text-gray-400 hover:text-gray-300">
+                        <i data-feather="twitter"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-300">
+                        <i data-feather="github"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-300">
+                        <i data-feather="instagram"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-300">
+                        <i data-feather="youtube"></i>
+                    </a>
+                </div>
+                <p class="mt-8 text-base text-gray-400 md:mt-0 md:order-1">
+                    &copy; 2023 Crypto Liquidation Bot. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+
+        // Initialize feather icons
+        feather.replace();
+
+        // Mobile menu toggle
+        document.querySelector('[aria-controls="mobile-menu"]').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Performance chart
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        const performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Account Balance',
+                    data: [10000, 10500, 11500, 11800, 12500, 13200, 14000, 14500, 15000, 16500, 18000, 21000],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#3b82f6',
+                    pointHoverBorderColor: '#fff',
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: '#1f2937',
+                        titleColor: '#f3f4f6',
+                        bodyColor: '#f3f4f6',
+                        borderColor: '#374151',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.raw.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#9ca3af'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: '#374151',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        // Simulate real-time updates for demo purposes
+        setInterval(() => {
+            // Randomly update the performance chart
+            const lastValue = performanceChart.data.datasets[0].data[performanceChart.data.datasets[0].data.length - 1];
+            const newValue = lastValue + (Math.random() * 1000 - 200);
+            performanceChart.data.datasets[0].data.push(newValue);
+            performanceChart.data.labels.push('');
+            
+            if (performanceChart.data.datasets[0].data.length > 12) {
+                performanceChart.data.datasets[0].data.shift();
+                performanceChart.data.labels.shift();
+            }
+            
+            performanceChart.update();
+        }, 5000);
+
+        // Socket.io connection (mock for demo)
+        const socket = io('https://demo.cryptoliquidationbot.com', {
+            transports: ['websocket'],
+            secure: true
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to WebSocket server');
+        });
+
+        socket.on('new_alert', (data) => {
+            // In a real app, we'd update the UI with the new alert
+            console.log('New alert received:', data);
+        });
+
+        socket.on('trade_executed', (data) => {
+            // In a real app, we'd update the UI with the new trade
+            console.log('Trade executed:', data);
+        });
+    </script>
+</body>
+</html>

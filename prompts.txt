@@ -1,0 +1,88 @@
+Build me a comprehensive trading automation website called "Crypto Liquidation Bot". The website should be a full-stack application with a modern, responsive UI (using dark theme for a professional trading feel, with charts and real-time updates), secure backend for bot operations, and integrations for handling TradingView alerts, Telegram, and crypto exchanges. It needs to automate trading based on liquidation signals from TradingView's 30-second timeframe charts for specific crypto assets: BTC, SOL, SUI, and ZEUS. The core goal is to receive alerts from TradingView (which are currently sent to a Telegram group), parse them, and execute automated trades on a user-selected exchange, including opening/closing positions, setting stop losses (SL), and take profits (TP).
+
+### Overall Architecture and Tech Stack
+- **Frontend:** Use React.js or Next.js for a dynamic, single-page application (SPA) with real-time updates via WebSockets or polling. Include components like dashboards, forms, and modals. Ensure mobile responsiveness for on-the-go monitoring.
+- **Backend:** Node.js with Express.js or Python with FastAPI for handling API integrations, bot logic, and data processing. Use a database like MongoDB or PostgreSQL to store user settings, trade history, alerts, and positions. Implement secure authentication (JWT or OAuth) and API key encryption (using libraries like bcrypt or AES for storage).
+- **Security:** All sensitive data (e.g., exchange API keys, Telegram bot tokens) must be encrypted and stored server-side. Include rate limiting, input validation, and HTTPS enforcement. Add user roles: admin for full access, with optional 2FA via Auth0 or similar.
+- **Hosting/Deployment:** Make it deployable to Vercel, Heroku, or AWS, with environment variables for secrets. Include scalability for handling multiple users/alerts.
+- **Real-Time Features:** Use Socket.io for live notifications of alerts, trades, and position updates.
+
+### Key Pages and UI/UX
+1. **Landing Page/Home:**
+   - Hero section: Explain the site's purpose – "Automate your crypto trades using TradingView liquidation alerts on 30s charts for BTC, SOL, SUI, ZEUS. Receive signals via Telegram, execute on your exchange with SL/TP management."
+   - Features overview: Bullet points on alert integration, bot automation, risk controls, and dashboard monitoring.
+   - Call-to-action: "Sign Up" button leading to registration.
+   - Footer: Links to privacy policy, terms, and contact.
+
+2. **User Dashboard (Protected Route):**
+   - Overview panel: Real-time summary of active positions (table showing asset, entry price, SL, TP, P&L), recent alerts, and bot status (running/paused).
+   - Charts: Embed TradingView widget (using their API) to display the 30s liquidation chart for selected assets. Allow switching between BTC, SOL, SUI, ZEUS.
+   - Alerts Log: Scrollable table or list of incoming alerts with timestamps, signal type (entry/exit), asset, price levels, and action taken (e.g., "Position opened at $X").
+   - Positions Manager: Interactive table for manual overrides (close position, adjust SL/TP). Include P&L calculations and risk metrics (e.g., max drawdown).
+   - Notifications: Toast alerts for new signals or trade executions.
+
+3. **Bot Configuration Page:**
+   - Form to input Telegram integration: Fields for Telegram Bot Token, Chat ID (for the group receiving TradingView alerts). The bot should poll the Telegram API every 5-10 seconds (or use webhooks if possible) to fetch new messages/alerts from the group.
+   - Exchange Setup: Dropdown for selecting exchange (support Binance, Bybit, OKX, KuCoin – make it extensible). Fields for API Key, Secret, and Passphrase (if needed), with secure upload/encryption. Test connection button to validate credentials.
+   - Asset Selection: Multi-select for BTC, SOL, SUI, ZEUS. Default to all.
+   - Trading Rules:
+     - Position Sizing: Input for risk per trade (e.g., % of account balance, fixed USDT amount).
+     - SL/TP Settings: Sliders/inputs for SL distance (e.g., 1-5% below entry), TP levels (e.g., 2x risk-reward ratio). Allow multiple TPs (partial closes).
+     - Alert Parsing Logic: Describe how to interpret TradingView alerts (e.g., assume alerts are formatted as "BUY BTC at $60,000" or "SELL SOL at $150" – include regex parsing for asset, direction, price). For liquidation charts, focus on high-volume liquidation zones as entry signals (long above support, short below resistance).
+     - Filters: Options to ignore alerts outside trading hours, or based on volatility (integrate simple TA via TA-Lib if possible).
+   - Bot Controls: Toggle to start/stop the bot, with a "Dry Run" mode for paper trading (simulates trades without real execution).
+   - Save settings button, with validation (e.g., ensure API keys are valid).
+
+4. **Trade History Page:**
+   - Paginated table: Columns for Date, Asset, Type (Long/Short), Entry/Exit Price, SL/TP Hit, P&L, Duration.
+   - Filters: By asset, date range, win/loss.
+   - Export: CSV download for analysis.
+   - Charts: Line graph of cumulative P&L over time, using Chart.js.
+
+5. **Settings/Profile Page:**
+   - User profile edit (email, password).
+   - API Logs: View recent bot logs/errors for debugging.
+   - Risk Management: Global settings like max open positions (e.g., 3), daily loss limit to pause bot.
+
+6. **Admin Panel (If Multi-User):**
+   - User management, bot monitoring across users.
+
+### Core Bot Functionality (Backend Logic)
+The bot runs as a background service (using cron jobs or Bull Queue for queuing trades to avoid rate limits).
+
+1. **Alert Reception:**
+   - Poll Telegram API for new messages in the specified group/chat.
+   - Parse incoming alerts: Use regex or NLP to extract key info (e.g., asset symbol, direction: BUY/SELL/LONG/SHORT, price target, optional SL/TP from alert). Assume alerts from TradingView are webhook-formatted or plain text like "Liquidation Alert: BTC Long Entry at 60000, SL 59500".
+   - Validate: Ensure asset is in allowed list (BTC, SOL, SUI, ZEUS), and signal is on 30s timeframe (infer from alert metadata if available).
+   - Queue the parsed signal for processing.
+
+2. **Trade Execution:**
+   - On receiving a BUY/LONG alert: Calculate position size based on user settings (e.g., risk 1% of balance). Place market or limit order on the exchange via their API (e.g., CCXT library for unified exchange support).
+   - Immediately set SL (stop-loss order) and TP (take-profit order) using exchange's OCO (One-Cancels-Other) if supported, or separate orders.
+   - For partial TPs: Support scaling out (e.g., close 50% at 1:1 RR, rest at 1:2).
+   - On SELL/SHORT or EXIT alert: Close the corresponding position (all or partial). If no open position, log as ignored.
+   - Handle errors: Retry failed orders (up to 3 times), notify user via email/Telegram in-app.
+
+3. **Position Management:**
+   - Track open positions in the database (link to alert ID).
+   - Monitor for SL/TP hits via exchange webhooks/polling (every 30s).
+   - Auto-close on exit signals, even if SL/TP not hit.
+   - Leverage: Allow user-configurable leverage (e.g., 5x-20x for futures/perpetuals).
+   - Account Sync: Periodically fetch account balance and positions from exchange to reconcile.
+
+4. **Data Sources and Integrations:**
+   - TradingView: Embed charts; optionally use their webhook alerts directly (add endpoint for webhooks as alternative to Telegram).
+   - Telegram: Bot API for polling/receiving messages.
+   - Exchanges: Use CCXT library for API calls (support spot and futures).
+   - No real-time price feeds needed beyond exchange API, but add optional WebSocket for live prices.
+   - Logging: Use Winston or similar for detailed logs (alert received, trade placed, etc.), viewable in dashboard.
+
+### Additional Features
+- **Notifications:** Send confirmations to user's Telegram or in-app (e.g., "Position opened: BTC Long at $60,000, SL $59,400, TP $61,200").
+- **Backtesting:** Simple simulator using historical TradingView data (if accessible via API) to test bot rules on past 30s liquidation charts.
+- **Performance Metrics:** Calculate win rate, Sharpe ratio, max drawdown in the dashboard.
+- **Error Handling and Safety:** Emergency stop button; auto-pause if losses exceed threshold. Warn about risks (disclaimer: "Trading involves risk; this is not financial advice").
+- **Customization:** Allow users to define custom alert formats or add more assets/exchanges via config.
+- **SEO/Marketing:** Basic meta tags; optional blog section for trading tips on liquidation charts.
+
+Ensure the site is fast, with loading times under 2s, and includes loading spinners for async operations. Generate all necessary code, including sample configs for Telegram/TradingView setup instructions in a docs page. Make it production-ready with tests for core bot functions.
